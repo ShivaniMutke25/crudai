@@ -1,0 +1,12 @@
+{
+  "key": "EMP-101",
+  "title": "Add department to employee",
+  "description": "As an HR administrator, I want to assign a department to an employee so that employees can be organized by department.",
+  "acceptanceCriteria": [
+    "Department is mandatory when creating an employee",
+    "Department can be updated",
+    "Department must be displayed in the employee list",
+    "Existing employee functionality must continue working"
+  ],
+  "priority": "Medium"
+}
