@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 @Service
@@ -13,131 +14,153 @@ public class RepositoryContextService {
 
     private final Path repositoryRoot;
 
-    // Keep context small because Ollama is local
-    private static final int MAX_FILES = 6;
-    private static final int MAX_FILE_CHARS = 8000;
-    private static final int MAX_TOTAL_CHARS = 25000;
+    // Optimized for local Ollama
+    private static final int MAX_FILES = 3;
+    private static final int MAX_FILE_CHARS = 2500;
+    private static final int MAX_TOTAL_CHARS = 8000;
+
+    // Cache repository context per story
+    private final Map<String, String> contextCache =
+            new ConcurrentHashMap<>();
 
     public RepositoryContextService() {
 
-        /*
-         * ai-sdlc-orchestrator is inside crud-employee.
-         *
-         * Example:
-         *
-         * crud-employee/
-         *   ai-sdlc-orchestrator/
-         *   springboot-backend/
-         *   react-frontend/
-         *
-         * Therefore ".." points to crud-employee.
-         */
         this.repositoryRoot = Paths.get("..")
                 .toAbsolutePath()
                 .normalize();
     }
 
+    /**
+     * Public API
+     */
     public String buildContext(JiraStory story) {
+
+        return contextCache.computeIfAbsent(
+                story.key(),
+                key -> buildContextInternal(story)
+        );
+    }
+
+    /**
+     * Clear cache (optional)
+     */
+    public void clearCache() {
+        contextCache.clear();
+    }
+
+    /**
+     * Actual repository scan
+     */
+    private String buildContextInternal(JiraStory story) {
 
         Set<String> keywords = extractKeywords(story);
 
-        List<Path> candidateFiles = new ArrayList<>();
+        List<RepositoryFile> files = new ArrayList<>();
 
-        // Scan backend
         scanDirectory(
                 repositoryRoot.resolve("springboot-backend/src"),
                 keywords,
-                candidateFiles
+                files
         );
 
-        // Scan frontend
         scanDirectory(
                 repositoryRoot.resolve("react-frontend/src"),
                 keywords,
-                candidateFiles
+                files
         );
 
-        // Rank most relevant files first
-        candidateFiles.sort(
-                Comparator.comparingInt(
-                        path -> -scoreFile(path, keywords)
-                )
+        files.sort(
+                Comparator.comparingInt(RepositoryFile::score)
+                        .reversed()
         );
-
-        // Debugging - useful during development
-        System.out.println("Repository root: " + repositoryRoot);
-
-        System.out.println(
-                "Repository keywords: " + keywords
-        );
-
-        candidateFiles.stream()
-                .limit(MAX_FILES)
-                .forEach(path ->
-                        System.out.println(
-                                "Selected repository file: "
-                                        + repositoryRoot.relativize(path)
-                        )
-                );
 
         StringBuilder context = new StringBuilder();
 
-        candidateFiles.stream()
-                .limit(MAX_FILES)
-                .forEach(path ->
-                        appendFile(context, path)
-                );
+        for (RepositoryFile file : files) {
 
-        System.out.println(
-                "Repository context size: "
-                        + context.length()
-                        + " characters"
-        );
+            if (context.length() >= MAX_TOTAL_CHARS) {
+                break;
+            }
+
+            appendFile(context, file);
+        }
 
         if (context.isEmpty()) {
-            return "No relevant repository files were discovered.";
+            return "No relevant repository files found.";
         }
 
         return context.toString();
     }
 
+    /**
+     * Scan repository
+     */
     private void scanDirectory(
             Path directory,
             Set<String> keywords,
-            List<Path> results) {
+            List<RepositoryFile> results) {
 
         if (!Files.exists(directory)) {
-
-            System.out.println(
-                    "Repository directory not found: "
-                            + directory
-            );
-
             return;
         }
 
         try (Stream<Path> paths = Files.walk(directory)) {
 
-            paths
-                    .filter(Files::isRegularFile)
+            paths.filter(Files::isRegularFile)
                     .filter(this::isSourceFile)
-                    .filter(path ->
-                            scoreFile(path, keywords) > 0
-                    )
-                    .forEach(results::add);
+                    .forEach(path -> {
+
+                        try {
+
+                            String content =
+                                    Files.readString(path);
+
+                            int score =
+                                    scoreFile(
+                                            path,
+                                            content,
+                                            keywords);
+
+                            if (score > 0) {
+
+                                if (content.length() >
+                                        MAX_FILE_CHARS) {
+
+                                    content =
+                                            content.substring(
+                                                    0,
+                                                    MAX_FILE_CHARS);
+                                }
+
+                                results.add(
+                                        new RepositoryFile(
+                                                path,
+                                                content,
+                                                score
+                                        )
+                                );
+                            }
+
+                        } catch (IOException ignored) {
+                        }
+
+                    });
 
         } catch (IOException e) {
 
             throw new RuntimeException(
-                    "Unable to scan repository: "
-                            + directory,
+                    "Unable to scan repository",
                     e
             );
         }
     }
 
+    /**
+     * Better scoring
+     */
     private int scoreFile(
             Path path,
+            String content,
             Set<String> keywords) {
 
         int score = 0;
@@ -147,100 +170,95 @@ public class RepositoryContextService {
                         .toString()
                         .toLowerCase();
 
-        // Filename matches get higher score
+        String lowerContent =
+                content.toLowerCase();
+
         for (String keyword : keywords) {
 
             if (fileName.contains(keyword)) {
                 score += 10;
             }
-        }
 
-        // Content matches get smaller score
-        try {
-
-            String content =
-                    Files.readString(path)
-                            .toLowerCase();
-
-            for (String keyword : keywords) {
-
-                if (content.contains(keyword)) {
-                    score += 2;
-                }
-            }
-
-        } catch (IOException ignored) {
+            score += countOccurrences(
+                    lowerContent,
+                    keyword
+            );
         }
 
         return score;
     }
 
-    private void appendFile(
-            StringBuilder context,
-            Path path) {
+    /**
+     * Count keyword frequency
+     */
+    private int countOccurrences(
+            String text,
+            String keyword) {
 
-        if (context.length() >= MAX_TOTAL_CHARS) {
-            return;
+        int count = 0;
+        int index = 0;
+
+        while ((index =
+                text.indexOf(keyword, index)) != -1) {
+
+            count++;
+            index += keyword.length();
         }
 
-        try {
-
-            String content = Files.readString(path);
-
-            // Prevent huge files from being sent to Ollama
-            if (content.length() > MAX_FILE_CHARS) {
-
-                content =
-                        content.substring(
-                                0,
-                                MAX_FILE_CHARS
-                        );
-            }
-
-            String relativePath =
-                    repositoryRoot
-                            .relativize(path)
-                            .toString()
-                            .replace("\\", "/");
-
-            String fileContext = """
-
-                    ========================================
-                    FILE: %s
-                    ========================================
-
-                    %s
-
-                    """.formatted(
-                    relativePath,
-                    content
-            );
-
-            int remaining =
-                    MAX_TOTAL_CHARS - context.length();
-
-            if (fileContext.length() > remaining) {
-
-                fileContext =
-                        fileContext.substring(
-                                0,
-                                remaining
-                        );
-            }
-
-            context.append(fileContext);
-
-        } catch (IOException ignored) {
-        }
+        return count;
     }
 
+    /**
+     * Build prompt context
+     */
+    private void appendFile(
+            StringBuilder context,
+            RepositoryFile file) {
+
+        String relativePath =
+                repositoryRoot
+                        .relativize(file.path())
+                        .toString()
+                        .replace("\\", "/");
+
+        String fileContext = """
+
+                ========================================
+                FILE: %s
+                ========================================
+
+                %s
+
+                """.formatted(
+                relativePath,
+                file.content()
+        );
+
+        int remaining =
+                MAX_TOTAL_CHARS - context.length();
+
+        if (fileContext.length() > remaining) {
+
+            fileContext =
+                    fileContext.substring(
+                            0,
+                            remaining
+                    );
+        }
+
+        context.append(fileContext);
+    }
+
+    /**
+     * Extract important story keywords
+     */
     private Set<String> extractKeywords(
             JiraStory story) {
 
         Set<String> keywords =
                 new LinkedHashSet<>();
 
-        String combined =
+        String text =
                 (
                         story.title()
                                 + " "
@@ -249,12 +267,6 @@ public class RepositoryContextService {
                                 + story.acceptanceCriteria()
                 ).toLowerCase();
 
-        /*
-         * Simple lexical retrieval for our POC.
-         *
-         * Later:
-         * embeddings / RAG / hybrid search can replace this.
-         */
         List<String> importantTerms =
                 List.of(
                         "employee",
@@ -262,12 +274,18 @@ public class RepositoryContextService {
                         "create",
                         "update",
                         "edit",
-                        "list"
+                        "delete",
+                        "list",
+                        "controller",
+                        "service",
+                        "repository",
+                        "model",
+                        "entity"
                 );
 
         for (String term : importantTerms) {
 
-            if (combined.contains(term)) {
+            if (text.contains(term)) {
                 keywords.add(term);
             }
         }
@@ -275,6 +293,9 @@ public class RepositoryContextService {
         return keywords;
     }
 
+    /**
+     * Supported source files
+     */
     private boolean isSourceFile(Path path) {
 
         String name =
@@ -287,5 +308,15 @@ public class RepositoryContextService {
                 || name.endsWith(".jsx")
                 || name.endsWith(".ts")
                 || name.endsWith(".tsx");
+    }
+
+    /**
+     * Internal helper
+     */
+    private record RepositoryFile(
+            Path path,
+            String content,
+            int score
+    ) {
     }
 }
