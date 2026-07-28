@@ -5,11 +5,15 @@ import com.aisdlc.model.JiraStory;
 import com.aisdlc.model.RepositoryAnalysis;
 import com.aisdlc.model.StoryAnalysis;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ImplementationPlanningService {
+
+    private static final Logger log = LoggerFactory.getLogger(ImplementationPlanningService.class);
 
     private final ChatClient chatClient;
     private final RepositoryContextService repositoryContextService;
@@ -30,8 +34,8 @@ public class ImplementationPlanningService {
         // Retrieve real repository evidence again
         String repositoryContext =
                 repositoryContextService.buildContext(story);
-
-        return chatClient
+        log.info("Starting implementation planning for story {}", story.key());
+        ImplementationPlan plan = chatClient
                 .prompt()
                 .system("""
                     You are a senior full-stack engineer creating
@@ -128,5 +132,7 @@ public class ImplementationPlanningService {
                 ))
                 .call()
                 .entity(ImplementationPlan.class);
+        log.info("Implementation planning completed for story {}: {}", story.key(), plan);
+        return plan;
     }
 }

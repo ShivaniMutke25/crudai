@@ -2,6 +2,8 @@ package com.aisdlc.service;
 
 import com.aisdlc.model.ImplementationPlan;
 import com.aisdlc.model.ImplementationStep;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
@@ -12,6 +14,8 @@ import java.util.Set;
 
 @Service
 public class ImplementationPlanValidator {
+
+    private static final Logger log = LoggerFactory.getLogger(ImplementationPlanValidator.class);
 
     private final Path repositoryRoot;
 
@@ -54,6 +58,7 @@ public class ImplementationPlanValidator {
             validateStep(step);
         }
 
+        log.info("Validated implementation plan for story {} with {} steps", plan.storyId(), plan.steps().size());
         return plan;
     }
 
@@ -125,12 +130,11 @@ public class ImplementationPlanValidator {
 
             if (!Files.isRegularFile(resolvedPath)) {
 
-                throw new IllegalStateException(
-                        "AI generated non-existing file for "
-                                + action
-                                + ": "
-                                + step.filePath()
-                );
+                log.warn("Plan step references a missing target file but will be kept for review. action={}, file={}, resolvedPath={}",
+                        action,
+                        step.filePath(),
+                        resolvedPath);
+                return;
             }
         }
 
@@ -139,10 +143,9 @@ public class ImplementationPlanValidator {
 
             if (Files.exists(resolvedPath)) {
 
-                throw new IllegalStateException(
-                        "AI tried to CREATE an existing file: "
-                                + step.filePath()
-                );
+                log.warn("Plan step tries to CREATE an existing file but will be kept for review. file={}",
+                        step.filePath());
+                return;
             }
         }
     }

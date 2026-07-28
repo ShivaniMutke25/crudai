@@ -5,10 +5,14 @@ import com.aisdlc.model.ImplementationPlan;
 import com.aisdlc.model.JiraStory;
 import com.aisdlc.model.RepositoryAnalysis;
 import com.aisdlc.model.StoryAnalysis;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AiSdlcOrchestrator {
+
+    private static final Logger log = LoggerFactory.getLogger(AiSdlcOrchestrator.class);
 
     private final StoryReaderService storyReaderService;
     private final StoryAnalysisService storyAnalysisService;
@@ -94,33 +98,38 @@ public class AiSdlcOrchestrator {
     public ImplementationPlan createImplementationPlan(
             String storyId) {
 
-        JiraStory story =
-                storyReaderService.readStory(storyId);
+        try {
+            JiraStory story =
+                    storyReaderService.readStory(storyId);
 
-        StoryAnalysis storyAnalysis =
-                workflowStateService.loadStoryAnalysis(storyId);
+            StoryAnalysis storyAnalysis =
+                    workflowStateService.loadStoryAnalysis(storyId);
 
-        RepositoryAnalysis repositoryAnalysis =
-                workflowStateService.loadRepositoryAnalysis(storyId);
+            RepositoryAnalysis repositoryAnalysis =
+                    workflowStateService.loadRepositoryAnalysis(storyId);
 
-        ImplementationPlan aiPlan =
-                implementationPlanningService.createPlan(
-                        story,
-                        storyAnalysis,
-                        repositoryAnalysis
-                );
+            ImplementationPlan aiPlan =
+                    implementationPlanningService.createPlan(
+                            story,
+                            storyAnalysis,
+                            repositoryAnalysis
+                    );
 
-        ImplementationPlan validatedPlan =
-                implementationPlanValidator.validate(aiPlan);
+            ImplementationPlan validatedPlan =
+                    implementationPlanValidator.validate(aiPlan);
 
-        workflowStateService.saveImplementationPlan(
-                storyId,
-                validatedPlan,
-                ApprovalStatus.PENDING
-        );
+            workflowStateService.saveImplementationPlan(
+                    storyId,
+                    validatedPlan,
+                    ApprovalStatus.PENDING
+            );
 
-        approvalService.createPending(storyId);
+            approvalService.createPending(storyId);
 
-        return validatedPlan;
+            return validatedPlan;
+        } catch (IllegalStateException ex) {
+            log.error("Implementation planning failed for story {}", storyId, ex);
+            throw ex;
+        }
     }
 }
