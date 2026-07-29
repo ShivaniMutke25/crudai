@@ -1,6 +1,6 @@
 package com.aisdlc.coding;
 
-import com.aisdlc.repository.model.RepositoryFile;
+import com.aisdlc.repository.RepositoryFile;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
