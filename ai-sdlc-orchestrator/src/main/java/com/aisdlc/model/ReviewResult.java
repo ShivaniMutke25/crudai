@@ -1,3 +1,4 @@
+package com.aisdlc.model;
 @Data
 @Builder
 @NoArgsConstructor

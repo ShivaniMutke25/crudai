@@ -1,4 +1,4 @@
-package com.aisdlc.repository.model;
+package com.aisdlc.repository;
 
 import lombok.Builder;
 import lombok.Data;
