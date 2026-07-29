@@ -1,0 +1,20 @@
+name: Story
+about: Create a new development story for the AI SDLC workflow
+description: Capture a new requirement or task
+title: "[Story] "
+labels: [story]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the story or requirement.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the expected outcomes.
+    validations:
+      required: true
