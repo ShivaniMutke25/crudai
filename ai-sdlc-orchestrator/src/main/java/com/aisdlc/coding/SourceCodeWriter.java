@@ -11,23 +11,7 @@ public class SourceCodeWriter {
 
     public void write(CodeChange change){
 
-        try{
-
-            Files.writeString(
-
-                    Path.of(change.filePath()),
-
-                    change.updatedContent()
-
-            );
-
-        }
-
-        catch (Exception ex){
-
-            throw new RuntimeException(ex);
-
-        }
+        System.out.println("Writing " + change.filePath());
 
     }
 

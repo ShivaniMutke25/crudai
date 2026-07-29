@@ -6,5 +6,4 @@ public record CodeGenerationResult(
 
         List<CodeChange> changes
 
-) {
-}
+) {}

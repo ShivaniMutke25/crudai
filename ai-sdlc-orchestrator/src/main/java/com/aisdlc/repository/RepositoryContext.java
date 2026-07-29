@@ -1,14 +1,9 @@
-package com.aisdlc.repository;
-
-import lombok.Builder;
-import lombok.Data;
+package com.aisdlc.repository.model;
 
 import java.util.List;
 
-@Data
-@Builder
-public class RepositoryContext {
+public record RepositoryContext(
 
-    private List<RepositoryFile> files;
+        List<RepositoryFile> files
 
-}
+) {}

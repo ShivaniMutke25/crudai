@@ -1,16 +1,9 @@
-package com.aisdlc.repository;
+package com.aisdlc.repository.model;
 
-import lombok.Builder;
-import lombok.Data;
+public record RepositoryMetadata(
 
-@Data
-@Builder
-public class RepositoryMetadata {
+        String path,
 
-    private String path;
+        String content
 
-    private String fileName;
-
-    private String type;
-
-}
+) {}

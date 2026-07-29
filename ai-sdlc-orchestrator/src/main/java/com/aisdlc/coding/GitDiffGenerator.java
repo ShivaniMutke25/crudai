@@ -6,14 +6,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class GitDiffGenerator {
 
-    public GitDiff generate(){
+    public GitDiff generate() {
 
         return GitDiff.builder()
-
-                .success(true)
-
-                .diff("Generated using git diff")
-
+                .diff("Prototype Git Diff")
                 .build();
 
     }

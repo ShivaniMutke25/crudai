@@ -5,10 +5,10 @@ import lombok.Data;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class GitDiff {
 
     private String diff;
-
-    private boolean success;
 
 }

@@ -6,5 +6,4 @@ public record CodeChange(
 
         String updatedContent
 
-) {
-}
+) {}
