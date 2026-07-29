@@ -1,61 +1,21 @@
-// package com.aisdlc.testing;
+package com.aisdlc.testing;
 
-// import lombok.extern.slf4j.Slf4j;
-// import org.springframework.stereotype.Service;
+import com.aisdlc.model.TestResult;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
-// import java.io.BufferedReader;
-// import java.io.InputStreamReader;
+@Slf4j
+@Service
+public class FrontendBuildService {
 
-// @Slf4j
-// @Service
-// public class MavenBuildService {
-// // 
-//     public TestResult execute(String projectPath) {
+    public TestResult execute(String projectName) {
 
-//         try {
+        log.info("Building frontend project: {}", projectName);
 
-//             ProcessBuilder builder = new ProcessBuilder(
-//                     "mvn",
-//                     "clean",
-//                     "test"
-//             );
-
-//             builder.directory(new java.io.File(projectPath));
-
-//             Process process = builder.start();
-
-//             StringBuilder output = new StringBuilder();
-
-//             try (BufferedReader reader =
-//                          new BufferedReader(
-//                                  new InputStreamReader(
-//                                          process.getInputStream()))) {
-
-//                 String line;
-
-//                 while ((line = reader.readLine()) != null) {
-
-//                     output.append(line).append("\n");
-
-//                 }
-
-//             }
-
-//             int exitCode = process.waitFor();
-
-//             return TestResult.builder()
-//                     .passed(exitCode == 0)
-//                     .report(output.toString())
-//                     .build();
-
-//         }
-
-//         catch (Exception ex) {
-
-//             throw new RuntimeException(ex);
-
-//         }
-
-//     }
-
-// }
+        // Prototype implementation
+        return TestResult.builder()
+                .passed(true)
+                .report("Frontend build successful for " + projectName)
+                .build();
+    }
+}

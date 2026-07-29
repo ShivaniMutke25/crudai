@@ -1,6 +1,6 @@
 package com.aisdlc.repository;
 
-import com.aisdlc.repository.model.RepositoryMetadata;
+import com.aisdlc.repository.RepositoryMetadata;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;

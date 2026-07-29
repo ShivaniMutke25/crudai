@@ -1,6 +1,6 @@
 package com.aisdlc.repository;
 
-import com.aisdlc.repository.model.*;
+import com.aisdlc.repository.*;
 
 import org.springframework.stereotype.Service;
 

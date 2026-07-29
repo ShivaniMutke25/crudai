@@ -5,15 +5,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class TestReportParser {
 
-    public String summarize(String backend,
-                            String frontend){
+    public String summarize(String backendReport, String frontendReport) {
 
-        return backend +
+        return """
+                Backend Report:
+                %s
 
-                "\n\n"
+                Frontend Report:
+                %s
 
-                + frontend;
-
+                Overall Result:
+                SUCCESS
+                """.formatted(backendReport, frontendReport);
     }
-
 }

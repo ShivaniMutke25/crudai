@@ -1,14 +1,9 @@
 package com.aisdlc.repository;
 
-import lombok.Builder;
-import lombok.Data;
+public record RepositoryFile(
 
-@Data
-@Builder
-public class RepositoryFile {
+        String path,
 
-    private String path;
+        String content
 
-    private String content;
-
-}
+) {}
