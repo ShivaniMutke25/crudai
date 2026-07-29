@@ -26,12 +26,13 @@ public class RepositoryScanner {
                         if (supported(name)) {
 
                             files.add(
-                                    RepositoryMetadata.builder()
-                                            .path(path.toString())
-                                            .fileName(name)
-                                            .type(detectType(name))
-                                            .build()
-                            );
+        new RepositoryMetadata(
+                path.toString(),
+                name,
+                detectType(name)
+        )
+);
+                                   
 
                         }
 

@@ -10,18 +10,19 @@ import java.util.stream.Collectors;
 public class RepositorySearcher {
 
     public List<RepositoryMetadata> search(
-            List<RepositoryMetadata> repository,
-            List<String> keywords) {
+        List<RepositoryMetadata> repository,
+        List<String> keywords) {
 
-        return repository.stream()
+    return repository.stream()
 
-                .filter(file ->
-                        keywords.stream().anyMatch(k ->
-                                file.getFileName().toLowerCase()
-                                        .contains(k.toLowerCase())))
+            .filter(file ->
+                    keywords.stream().anyMatch(k ->
+                            file.fileName()
+                                    .toLowerCase()
+                                    .contains(k.toLowerCase())))
 
-                .collect(Collectors.toList());
+            .toList();
 
-    }
+}
 
 }
