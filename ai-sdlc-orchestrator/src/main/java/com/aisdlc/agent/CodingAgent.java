@@ -31,8 +31,7 @@ public class CodingAgent implements Agent {
         String systemPrompt =
                 promptLoader.loadAgent("coder.md");
 
-        String userPrompt =
-                buildPrompt(context);
+        String userPrompt =        buildPrompt(context);
 
         CodeGenerationResult result =
                 llmService.generate(

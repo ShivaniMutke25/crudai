@@ -22,22 +22,31 @@ public class AgentOrchestrator {
                 .jiraStory(story)
                 .build();
 
-        plannerAgent.execute(context);
+        System.out.println("PlannerAgent Started");
+plannerAgent.execute(context);
 
-        repositoryAgent.execute(context);
+System.out.println("RepositoryAgent Started");
+repositoryAgent.execute(context);
 
-        codingAgent.execute(context);
+System.out.println("CodingAgent Started");
+codingAgent.execute(context);
 
-        testingAgent.execute(context);
+System.out.println("TestingAgent Started");
+testingAgent.execute(context);
 
-        reviewAgent.execute(context);
+System.out.println("ReviewAgent Started");
+reviewAgent.execute(context);
 
-        if (context.getReviewResult().isApproved()) {
+if (context.getReviewResult().isApproved()) {
 
-            pullRequestAgent.execute(context);
+    System.out.println("PullRequestAgent Started");
+    pullRequestAgent.execute(context);
 
-        }
+} else {
 
+    System.out.println("Review rejected. Pull Request not created.");
+
+}
         return context;
 
     }

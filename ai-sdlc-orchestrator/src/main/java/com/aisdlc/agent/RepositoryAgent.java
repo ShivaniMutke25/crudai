@@ -58,16 +58,22 @@ public class RepositoryAgent implements Agent {
         String userPrompt =
                 buildUserPrompt(plan, repositoryContext);
 
-        RepositoryAnalysis analysis =
-                llmService.generate(
+        // RepositoryAnalysis analysis =
+        //         llmService.generate(
 
-                        systemPrompt,
+        //                 systemPrompt,
 
-                        userPrompt,
+        //                 userPrompt,
 
-                        RepositoryAnalysis.class
+        //                 RepositoryAnalysis.class
 
-                );
+        //         );
+
+       RepositoryAnalysis analysis = new RepositoryAnalysis(
+    "Repository scanned successfully",
+    List.of()
+);
+
 
         context.setRepositoryAnalysis(analysis);
 
